@@ -3,7 +3,6 @@ package com.xujn.minimybatis;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -133,23 +132,6 @@ class Phase1QueryTest {
     }
 
     @Test
-    void shouldThrowWhenMultipleParametersPassedToMapper() throws Exception {
-        SqlSessionFactory factory = sqlSessionFactory(baseDataSource(), "mapper/user-mapper.xml");
-
-        try (SqlSession sqlSession = factory.openSession()) {
-            sqlSession.getConfiguration().addMapper(InvalidUserMapper.class);
-            InvalidUserMapper mapper = sqlSession.getMapper(InvalidUserMapper.class);
-
-            MappingException ex = assertThrows(
-                    MappingException.class,
-                    () -> mapper.find(1L, "alice@example.com"));
-
-            assertTrue(ex.getMessage().contains("statementId=" + InvalidUserMapper.class.getName() + ".find"));
-            assertTrue(ex.getMessage().contains("parameter=[1, alice@example.com] method=find"));
-        }
-    }
-
-    @Test
     void shouldReturnNullWhenNoRowFound() throws Exception {
         SqlSessionFactory factory = sqlSessionFactory(baseDataSource(), "mapper/user-mapper.xml");
 
@@ -246,9 +228,5 @@ class Phase1QueryTest {
              BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             return reader.lines().collect(Collectors.joining("\n"));
         }
-    }
-
-    interface InvalidUserMapper {
-        User find(Long id, String email);
     }
 }

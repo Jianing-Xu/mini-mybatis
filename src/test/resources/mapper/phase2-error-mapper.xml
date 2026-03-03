@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper namespace="com.xujn.minimybatis.support.Phase2ErrorMapper">
+    <select id="selectMissingParameter" resultType="com.xujn.minimybatis.examples.phase2.Phase2User">
+        select id, username as user_name, email from users where id = #{missingId}
+    </select>
+    <select id="selectFieldOnly" resultType="com.xujn.minimybatis.support.FieldOnlyUser">
+        select id, username as user_name, email from users order by id
+    </select>
+</mapper>
