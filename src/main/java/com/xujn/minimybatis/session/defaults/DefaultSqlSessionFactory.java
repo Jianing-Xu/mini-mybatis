@@ -1,6 +1,9 @@
 package com.xujn.minimybatis.session.defaults;
 
 import com.xujn.minimybatis.executor.SimpleExecutor;
+import com.xujn.minimybatis.executor.Executor;
+import com.xujn.minimybatis.executor.ExecutorType;
+import com.xujn.minimybatis.executor.ReuseExecutor;
 import com.xujn.minimybatis.session.Configuration;
 import com.xujn.minimybatis.session.SqlSession;
 import com.xujn.minimybatis.session.SqlSessionFactory;
@@ -23,11 +26,19 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
 
     @Override
     public SqlSession openSession() {
-        return new DefaultSqlSession(configuration, new SimpleExecutor(configuration));
+        return new DefaultSqlSession(configuration, createExecutor());
     }
 
     @Override
     public Configuration getConfiguration() {
         return configuration;
+    }
+
+    private Executor createExecutor() {
+        ExecutorType executorType = configuration.getDefaultExecutorType();
+        if (executorType == ExecutorType.REUSE) {
+            return new ReuseExecutor(configuration);
+        }
+        return new SimpleExecutor(configuration);
     }
 }

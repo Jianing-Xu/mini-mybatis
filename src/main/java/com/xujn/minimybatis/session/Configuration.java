@@ -1,6 +1,7 @@
 package com.xujn.minimybatis.session;
 
 import com.xujn.minimybatis.binding.MapperRegistry;
+import com.xujn.minimybatis.executor.ExecutorType;
 import com.xujn.minimybatis.exceptions.MappingException;
 import com.xujn.minimybatis.mapping.MappedStatement;
 import com.xujn.minimybatis.support.ErrorContext;
@@ -24,6 +25,7 @@ public class Configuration {
     private final MapperRegistry mapperRegistry = new MapperRegistry(this);
     private DataSource dataSource;
     private boolean mapUnderscoreToCamelCase;
+    private ExecutorType defaultExecutorType = ExecutorType.SIMPLE;
 
     public DataSource getDataSource() {
         return dataSource;
@@ -84,5 +86,17 @@ public class Configuration {
 
     public void setMapUnderscoreToCamelCase(boolean mapUnderscoreToCamelCase) {
         this.mapUnderscoreToCamelCase = mapUnderscoreToCamelCase;
+    }
+
+    public ExecutorType getDefaultExecutorType() {
+        return defaultExecutorType;
+    }
+
+    public void setDefaultExecutorType(ExecutorType defaultExecutorType) {
+        if (defaultExecutorType == null) {
+            this.defaultExecutorType = ExecutorType.SIMPLE;
+            return;
+        }
+        this.defaultExecutorType = defaultExecutorType;
     }
 }

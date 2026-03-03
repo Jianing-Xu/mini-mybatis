@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mapper namespace="com.xujn.minimybatis.examples.phase3.Phase3UserMapper">
+    <select id="selectById" parameterType="java.lang.Long" resultType="com.xujn.minimybatis.examples.phase3.Phase3User">
+        select id, username, email from users where id = #{id}
+    </select>
+
+    <select id="selectByEmail" parameterType="java.lang.String" resultType="com.xujn.minimybatis.examples.phase3.Phase3User">
+        select id, username, email from users where email = #{value}
+    </select>
+
+    <select id="selectAll" resultType="com.xujn.minimybatis.examples.phase3.Phase3User">
+        select id, username, email from users order by id
+    </select>
+</mapper>

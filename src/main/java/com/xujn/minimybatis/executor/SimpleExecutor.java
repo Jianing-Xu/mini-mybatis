@@ -1,6 +1,6 @@
 package com.xujn.minimybatis.executor;
 
-import com.xujn.minimybatis.executor.statement.PreparedStatementHandler;
+import com.xujn.minimybatis.executor.statement.RoutingStatementHandler;
 import com.xujn.minimybatis.executor.statement.StatementHandler;
 import com.xujn.minimybatis.mapping.BoundSql;
 import com.xujn.minimybatis.mapping.MappedStatement;
@@ -43,7 +43,7 @@ public class SimpleExecutor implements Executor {
         String sql = mappedStatement.getSqlSource().getSql();
         BoundSql boundSql = mappedStatement.getBoundSql(parameter);
         StatementHandler statementHandler =
-                new PreparedStatementHandler(configuration, mappedStatement, parameter, boundSql);
+                new RoutingStatementHandler(configuration, mappedStatement, parameter, boundSql);
         try (Connection connection = dataSource.getConnection();
              PreparedStatement statement = statementHandler.prepare(connection)) {
             statementHandler.parameterize(statement);
@@ -75,6 +75,7 @@ public class SimpleExecutor implements Executor {
                 .resource(mappedStatement.getResource())
                 .sql(mappedStatement.getBoundSql(parameter).getSql())
                 .parameter(parameter)
-                .resultType(mappedStatement.getResultType());
+                .resultType(mappedStatement.getResultType())
+                .executorType(ExecutorType.SIMPLE);
     }
 }

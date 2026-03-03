@@ -19,6 +19,7 @@ public final class ErrorContext {
     private String parameter = "null";
     private String resultType = "n/a";
     private String mapper = "n/a";
+    private String executorType = "n/a";
 
     public static ErrorContext create() {
         return new ErrorContext();
@@ -77,12 +78,20 @@ public final class ErrorContext {
         return this;
     }
 
+    public ErrorContext executorType(Object executorType) {
+        if (executorType != null) {
+            this.executorType = executorType.toString();
+        }
+        return this;
+    }
+
     public String format() {
         return "statementId=" + statementId
                 + ", resource=" + resource
                 + ", sql=" + sql
                 + ", parameter=" + parameter
                 + ", resultType=" + resultType
-                + ", mapper=" + mapper;
+                + ", mapper=" + mapper
+                + ", executorType=" + executorType;
     }
 }
