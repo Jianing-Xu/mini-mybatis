@@ -5,13 +5,15 @@
 ### 用例 1：Mapper 扫描注册成功
 - Given
   - mini-spring 容器已注册 `MapperScannerConfigurer`
+  - mini-spring 已支持在 `refresh` 中执行自定义 `BeanFactoryPostProcessor`
   - `basePackages` 指向包含多个 Mapper 接口的包
   - `SqlSessionFactoryBean` 与 `DataSource` BeanDefinition 已存在
 - When
   - 执行容器 `refresh`
 - Then
-  - 每个 Mapper 接口都生成一个 `MapperFactoryBean` 类型 `BeanDefinition`
-  - `BeanDefinition` 中包含 `mapperInterface` 属性与 `sqlSessionTemplate` 引用
+  - 每个 Mapper 接口都生成一个工厂方法型 `BeanDefinition`
+  - `MapperDefinitionRegistry` 中存在 `beanName -> mapperInterface` 映射
+  - 每个 Mapper BeanDefinition 都携带传给 `MapperFactory#getMapper(beanName)` 的字面量参数
   - 未把普通 class 或抽象类注册为 Mapper Bean
 
 ### 用例 2：SqlSessionFactory 启动期初始化成功
@@ -33,7 +35,7 @@
   - 调用 `getBean(userMapper)` 并执行一个基础查询方法
 - Then
   - 返回对象为 Mapper 代理 Bean
-  - 代理调用通过 `SqlSessionTemplate -> SqlSessionFactory -> SqlSession -> Executor` 完成执行
+  - 代理调用通过 `MapperFactory -> SqlSessionTemplate -> SqlSessionFactory -> SqlSession -> Executor` 完成执行
   - 查询结果与 `MappedStatement` 对应返回类型一致
 
 ## 正常路径
@@ -61,9 +63,10 @@
   - 所有 `statementId` 均进入 `Configuration`
   - 任一 Mapper Bean 获取后均可正常路由到对应 `statementId`
 
-### 正常路径 3：FactoryBean 单例语义生效
+### 正常路径 3：工厂方法单例语义生效
 - Given
-  - 某 Mapper Bean 的 `MapperFactoryBean.isSingleton()` 返回 `true`
+  - 某 Mapper Bean 使用工厂方法型 `BeanDefinition`
+  - 容器对该 BeanDefinition 采用单例缓存
 - When
   - 连续两次调用 `getBean` 获取同名 Mapper Bean
 - Then
@@ -108,7 +111,7 @@
 - Given
   - 同一 Mapper 接口因重复扫描或重复配置进入注册流程
 - When
-  - `MapperScannerConfigurer` 注册 `BeanDefinition`
+  - `MapperScannerConfigurer` 注册 BeanDefinition
 - Then
   - 抛出 `MapperRegistrationException`
   - 错误信息包含 `mapperClass` 与扫描来源包
@@ -123,6 +126,17 @@
 - Then
   - 抛出 `MapperBindingException`
   - 错误信息包含 `mapperClass`、`methodName`、`statementId`
+
+### 失败路径 6：mini-spring 未执行自定义 BeanFactoryPostProcessor
+- Given
+  - 容器只执行内置 `ConfigurationClassPostProcessor`
+  - `MapperScannerConfigurer` 作为自定义 BFPP 已注册
+- When
+  - 执行容器 `refresh`
+- Then
+  - Mapper BeanDefinition 不会被注册
+  - 该问题必须通过前置容器改造修复，不允许被静默忽略
+  - 集成验收视为失败
 
 ## 资源释放验证策略说明（连接关闭/异常路径关闭）
 
