@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper namespace="com.xujn.minimybatis.examples.phase2.Phase2UserMapper">
+    <select id="selectById" parameterType="java.lang.Long" resultType="com.xujn.minimybatis.examples.phase2.Phase2User">
+        select id, username as user_name, email from users where id = #{id}
+    </select>
+    <select id="selectByUsernameAndEmail" resultType="com.xujn.minimybatis.examples.phase2.Phase2User">
+        select id, username as user_name, email from users where username = #{username} and email = #{email}
+    </select>
+    <select id="selectByFilter" parameterType="com.xujn.minimybatis.examples.phase2.Phase2UserFilter" resultType="com.xujn.minimybatis.examples.phase2.Phase2User">
+        select id, username as user_name, email from users where id = #{id} and username = #{username}
+    </select>
+    <select id="selectAllCamelCase" resultType="com.xujn.minimybatis.examples.phase2.Phase2User">
+        select id, username as user_name, email from users order by id
+    </select>
+</mapper>
