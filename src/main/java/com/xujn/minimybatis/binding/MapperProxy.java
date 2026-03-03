@@ -2,11 +2,14 @@ package com.xujn.minimybatis.binding;
 
 import com.xujn.minimybatis.support.ErrorContext;
 import com.xujn.minimybatis.support.ExceptionFactory;
+import com.xujn.minimybatis.support.JdbcUtils;
 import com.xujn.minimybatis.session.SqlSession;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.Arrays;
+import java.lang.reflect.Parameter;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * JDK dynamic proxy handler for mapper interfaces.
@@ -54,13 +57,29 @@ public class MapperProxy<T> implements InvocationHandler {
             return null;
         }
         if (args.length == 1) {
-            return args[0];
+            Object argument = args[0];
+            if (argument == null || JdbcUtils.isSimpleType(argument.getClass())) {
+                return wrapNamedParameters(method, args);
+            }
+            return argument;
         }
-        throw ExceptionFactory.mappingException(
-                "Mapper method accepts more than one parameter in phase 1",
-                ErrorContext.create()
-                        .mapper(mapperInterface)
-                        .statementId(statementId)
-                        .parameterSummary(Arrays.toString(args) + " method=" + method.getName()));
+        return wrapNamedParameters(method, args);
+    }
+
+    private Map<String, Object> wrapNamedParameters(Method method, Object[] args) {
+        Parameter[] parameters = method.getParameters();
+        Map<String, Object> parameterMap = new LinkedHashMap<>();
+        for (int i = 0; i < args.length; i++) {
+            Object argument = args[i];
+            parameterMap.put("param" + (i + 1), argument);
+            if (parameters[i].isNamePresent()) {
+                parameterMap.put(parameters[i].getName(), argument);
+            }
+            if (args.length == 1) {
+                parameterMap.put("value", argument);
+                parameterMap.put("_parameter", argument);
+            }
+        }
+        return parameterMap;
     }
 }

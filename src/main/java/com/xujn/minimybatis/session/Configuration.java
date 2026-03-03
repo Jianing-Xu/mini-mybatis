@@ -23,6 +23,7 @@ public class Configuration {
     private final Map<String, MappedStatement> mappedStatements = new LinkedHashMap<>();
     private final MapperRegistry mapperRegistry = new MapperRegistry(this);
     private DataSource dataSource;
+    private boolean mapUnderscoreToCamelCase;
 
     public DataSource getDataSource() {
         return dataSource;
@@ -75,5 +76,13 @@ public class Configuration {
 
     public MapperRegistry getMapperRegistry() {
         return mapperRegistry;
+    }
+
+    public boolean isMapUnderscoreToCamelCase() {
+        return mapUnderscoreToCamelCase;
+    }
+
+    public void setMapUnderscoreToCamelCase(boolean mapUnderscoreToCamelCase) {
+        this.mapUnderscoreToCamelCase = mapUnderscoreToCamelCase;
     }
 }
