@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper namespace="com.xujn.minimybatis.examples.phase1.UserMapper">
+    <select id="selectBroken" resultType="com.xujn.minimybatis.support.NoDefaultConstructorUser">
+        select id, username, email from users where id = 1
+    </select>
+</mapper>
