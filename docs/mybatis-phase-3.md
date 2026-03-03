@@ -69,7 +69,7 @@ public enum ExecutorType {
 
 #### `ReuseExecutor`
 - 目的：在单个 `SqlSession` 生命周期内复用相同 SQL 的 `PreparedStatement`。
-- 最小实现要点：以连接标识和 SQL 文本作为缓存键；在会话关闭时统一关闭缓存语句。
+- 最小实现要点：在单会话持有单连接的前提下，以可执行 SQL 文本作为缓存键；在会话关闭时统一关闭缓存语句。
 - 边界：只在同一 `SqlSession` 内复用；不跨会话、不跨连接复用。
 - 可选增强：后续增加 LRU 控制和统计信息。
 - 依赖关系：`executor -> statement / parameter / resultset / session`
@@ -127,15 +127,15 @@ public class Configuration {
 
 > [注释] Statement 复用只以“同一会话、同一连接、同一 SQL”作为边界
 > - 背景：`PreparedStatement` 绑定了连接上下文，跨连接复用会直接破坏 JDBC 语义。
-> - 影响：缓存键不能只看 `statementId`，还必须绑定连接或会话级连接来源。
-> - 取舍：Phase 3 只做单会话内复用，不做跨会话共享。
+> - 影响：当前实现通过“单会话持有单连接”约束连接边界，因此缓存键只需要看可执行 SQL 文本，不需要额外暴露连接标识。
+> - 取舍：Phase 3 只做单会话内复用，不做跨会话共享，也不引入跨连接缓存键模型。
 > - 可选增强：未来在事务上下文稳定后再评估线程绑定连接下的复用策略。
 
 > [注释] Statement 复用引入缓存后，资源释放必须从“单次查询关闭”改为“会话关闭统一关闭”
 > - 背景：`SimpleExecutor` 每次查询后立即关闭语句，而 `ReuseExecutor` 需要保留语句到当前会话结束。
 > - 影响：必须把 `PreparedStatement` 的关闭责任从查询路径迁移到 `ReuseExecutor.close()`。
 > - 取舍：继续让 `ResultSet` 在每次查询后立即关闭，但缓存 `PreparedStatement` 到会话结束。
-> - 可选增强：增加失效策略，在语句执行异常后主动移除坏语句。
+> - 可选增强：当前实现已经在语句执行失败后主动移除坏语句，后续可继续增加失效原因分类和统计信息。
 
 ### 失败策略
 - SQL 准备失败
@@ -150,10 +150,16 @@ public class Configuration {
   - 边界：只处理当前缓存项。
   - 可选增强：增加缓存健康检查统计。
   - 依赖关系：`executor -> statement cache`
+- 语句执行失败后缓存淘汰
+  - 目的：避免失败过的 `PreparedStatement` 在同一会话内被继续复用。
+  - 最小实现要点：`parameterize()` 或 `query()` 抛出运行时异常后，淘汰并关闭对应缓存语句；下次查询重新创建。
+  - 边界：只淘汰当前 SQL 对应缓存项。
+  - 可选增强：根据异常类型区分“直接淘汰”和“保留重试”。
+  - 依赖关系：`executor -> statement cache / support`
 - 会话关闭失败
   - 目的：保证尽可能关闭所有缓存语句。
-  - 最小实现要点：逐个关闭并聚合首个异常上下文。
-  - 边界：不做 suppress 明细输出模型扩展。
+- 最小实现要点：逐个关闭全部缓存语句，最终抛出首个关闭异常，并保留对应语句上下文。
+- 边界：不做聚合异常模型，不额外暴露关闭失败列表。
   - 可选增强：增加关闭失败列表。
   - 依赖关系：`executor -> support`
 
@@ -213,9 +219,10 @@ flowchart TD
 - 同一 `SqlSession` 内执行不同 SQL 时，分别创建独立 `PreparedStatement`。
 - 不同 `SqlSession` 之间不共享 `PreparedStatement` 缓存。
 - `SqlSession.close()` 后，`ReuseExecutor` 缓存中的全部 `PreparedStatement` 关闭次数等于缓存项数量。
-- 查询异常后再次执行相同 SQL，能够检测坏语句并重新创建，或者在会话关闭时完整释放缓存语句。
+- 查询异常后再次执行相同 SQL，能够淘汰坏语句并重新创建新的 `PreparedStatement`。
 - 新增扩展点后，不修改 `MappedStatement` 现有基础字段，不修改 Mapper 接口签名。
 - Phase 1、Phase 2 的 examples 保持可运行，且在 `SIMPLE` 模式下输出不变。
+- `ReuseExecutor.close()` 关闭失败时，异常消息包含 `statementId`、`resource`、`sql`、`executorType`。
 
 ## 5. Git 交付计划
 - branch: `feature/mybatis-phase-3-executor-extension`
@@ -227,6 +234,7 @@ flowchart TD
   - `feat(executor): add statement cache key and reuse lifecycle management` -> `/Users/xjn/Develop/projects/java/mini-mybatis/src/main/java/com/xujn/minimybatis/executor/support/StatementCacheKey.java`, `/Users/xjn/Develop/projects/java/mini-mybatis/src/main/java/com/xujn/minimybatis/executor/ReuseExecutor.java`
   - `fix(executor): recreate invalid cached prepared statement on reuse failure` -> `/Users/xjn/Develop/projects/java/mini-mybatis/src/main/java/com/xujn/minimybatis/executor/ReuseExecutor.java`
   - `test(executor): cover statement reuse in same sql session` -> `/Users/xjn/Develop/projects/java/mini-mybatis/src/test/java/com/xujn/minimybatis/Phase3ReuseExecutorTest.java`
-  - `test(resources): add phase 3 mapper resources for reuse scenarios` -> `/Users/xjn/Develop/projects/java/mini-mybatis/src/test/resources/mapper/phase3-reuse-mapper.xml`, `/Users/xjn/Develop/projects/java/mini-mybatis/src/test/resources/schema-phase3.sql`
+  - `test(resources): add phase 3 mapper resources for reuse scenarios` -> `/Users/xjn/Develop/projects/java/mini-mybatis/src/test/resources/mapper/phase3-reuse-mapper.xml`, `/Users/xjn/Develop/projects/java/mini-mybatis/src/main/resources/schema.sql`
   - `feat(examples): add phase 3 reuse executor example` -> `/Users/xjn/Develop/projects/java/mini-mybatis/examples/phase3/com/xujn/minimybatis/examples/phase3/Phase3ReuseExecutorExample.java`
+  - `docs(readme): document current phase coverage and verification commands` -> `/Users/xjn/Develop/projects/java/mini-mybatis/README.md`
   - `docs(mybatis): add phase 3 executor extension design and acceptance docs` -> `/Users/xjn/Develop/projects/java/mini-mybatis/docs/mybatis-phase-3.md`, `/Users/xjn/Develop/projects/java/mini-mybatis/tests/acceptance-mybatis-phase-3.md`
