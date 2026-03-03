@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mapper namespace="com.xujn.minispring.integration.mybatis.testsupport.phase1.common.IntegrationUserMapper">
+    <select id="selectAll" resultType="com.xujn.minispring.integration.mybatis.testsupport.phase1.common.IntegrationUser">
+        select id, username, email from users order by id
+    </select>
+</mapper>
