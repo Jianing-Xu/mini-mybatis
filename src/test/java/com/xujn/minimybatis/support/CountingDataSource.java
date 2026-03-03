@@ -19,6 +19,7 @@ import javax.sql.DataSource;
 public class CountingDataSource implements DataSource {
 
     private final DataSource delegate;
+    private final AtomicInteger preparedStatementCreatedCount = new AtomicInteger();
     private final AtomicInteger connectionClosedCount = new AtomicInteger();
     private final AtomicInteger statementClosedCount = new AtomicInteger();
     private final AtomicInteger resultSetClosedCount = new AtomicInteger();
@@ -41,6 +42,10 @@ public class CountingDataSource implements DataSource {
         connectionClosedCount.incrementAndGet();
     }
 
+    void incrementPreparedStatementCreated() {
+        preparedStatementCreatedCount.incrementAndGet();
+    }
+
     void incrementStatementClosed() {
         statementClosedCount.incrementAndGet();
     }
@@ -51,6 +56,10 @@ public class CountingDataSource implements DataSource {
 
     public int getConnectionClosedCount() {
         return connectionClosedCount.get();
+    }
+
+    public int getPreparedStatementCreatedCount() {
+        return preparedStatementCreatedCount.get();
     }
 
     public int getStatementClosedCount() {

@@ -48,6 +48,7 @@ public final class CountingConnection {
                     && args.length > 0
                     && args[0] instanceof String) {
                 PreparedStatement statement = (PreparedStatement) method.invoke(delegate, args);
+                counters.incrementPreparedStatementCreated();
                 return CountingPreparedStatement.wrap(statement, counters);
             }
             if ("close".equals(method.getName())) {
