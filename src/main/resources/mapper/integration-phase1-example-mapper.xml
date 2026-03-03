@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mapper namespace="com.xujn.minimybatis.examples.integration.phase1.IntegrationUserMapper">
+    <select id="selectById" resultType="com.xujn.minimybatis.examples.integration.phase1.IntegrationUser">
+        select id, username, email from users where id = #{value}
+    </select>
+    <select id="selectAll" resultType="com.xujn.minimybatis.examples.integration.phase1.IntegrationUser">
+        select id, username, email from users order by id
+    </select>
+</mapper>
