@@ -1,5 +1,6 @@
 package com.xujn.minimybatis.builder.xml;
 
+import com.xujn.minimybatis.builder.SqlSourceBuilder;
 import com.xujn.minimybatis.mapping.MappedStatement;
 import com.xujn.minimybatis.mapping.SqlCommandType;
 import com.xujn.minimybatis.mapping.SqlSource;
@@ -17,6 +18,7 @@ import org.w3c.dom.Element;
  */
 public class XmlStatementParser {
 
+    private final SqlSourceBuilder sqlSourceBuilder = new SqlSourceBuilder();
     private final String namespace;
     private final String resource;
 
@@ -27,6 +29,7 @@ public class XmlStatementParser {
 
     public MappedStatement parse(Element selectElement) {
         String id = selectElement.getAttribute("id");
+        String parameterTypeName = selectElement.getAttribute("parameterType");
         String resultTypeName = selectElement.getAttribute("resultType");
         if (id == null || id.isBlank()) {
             throw ExceptionFactory.builderException(
@@ -47,9 +50,9 @@ public class XmlStatementParser {
         return new MappedStatement(
                 id,
                 namespace,
-                new SqlSource(sql),
+                buildSqlSource(sql),
                 SqlCommandType.SELECT,
-                null,
+                resolveOptionalClass(parameterTypeName),
                 resolveClass(resultTypeName),
                 resource);
     }
@@ -67,6 +70,17 @@ public class XmlStatementParser {
                     ErrorContext.create().resource(resource).resultType(Object.class).parameterSummary(className),
                     ex);
         }
+    }
+
+    private Class<?> resolveOptionalClass(String className) {
+        if (className == null || className.isBlank()) {
+            return null;
+        }
+        return resolveClass(className);
+    }
+
+    private SqlSource buildSqlSource(String sql) {
+        return sqlSourceBuilder.parse(sql);
     }
 
     private Class<?> resolveNamespaceClass() {

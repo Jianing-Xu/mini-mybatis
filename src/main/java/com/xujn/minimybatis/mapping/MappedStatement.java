@@ -68,4 +68,8 @@ public final class MappedStatement {
     public String getResource() {
         return resource;
     }
+
+    public BoundSql getBoundSql(Object parameterObject) {
+        return sqlSource.getBoundSql(parameterObject);
+    }
 }
